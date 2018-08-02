@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/metakeule/pager"
+
 	// "fmt"
 	"github.com/gdamore/tcell"
 	"github.com/metakeule/short"
@@ -19,23 +21,34 @@ type ParamsWindow struct {
 	shortcut      string
 	origCMD       string
 	origShortcut  string
+	selected      int
+	mainWindow    *MainWindow
 }
 
 func (p *ParamsWindow) refresh() {
-	cs := p.s.pagedCuts()
+	// cs := p.s.pagedCuts()
 
-	p.finalCmd, p.params, p.finalDefaults = p.s.paramLines(cs)
-	p.origCMD = cs[p.s.Selected].Command
-	p.origShortcut = cs[p.s.Selected].Name
-	p.defaults = cs[p.s.Selected].Defaults
+	c := p.s.filteredCuts[p.selected]
 
+	p.finalCmd, p.params, p.finalDefaults = p.s.paramLines(c.Name)
+	/*
+		p.finalCmd, p.params, p.finalDefaults = p.s.paramLines(cs)
+			p.origCMD = cs[p.s.Selected].Command
+			p.origShortcut = cs[p.s.Selected].Name
+			p.defaults = cs[p.s.Selected].Defaults
+	*/
+	p.origCMD = c.Command
+	p.origShortcut = c.Name
+	p.defaults = c.Defaults
 	p.cmd = p.origCMD
 	p.shortcut = p.origShortcut
 	p.cursorX = -1
 }
 
-func NewParamsWindow(s *Screen) *ParamsWindow {
-	p := &ParamsWindow{ModalWindow: NewModalWindow(s)}
+func NewParamsWindow(m *MainWindow, selected int) *ParamsWindow {
+	p := &ParamsWindow{ModalWindow: NewModalWindow(m.s)}
+	p.selected = selected
+	p.mainWindow = m
 	p.refresh()
 	return p
 }
@@ -93,12 +106,21 @@ func (p *ParamsWindow) KeyCtrlS(ev *tcell.EventKey) (quit bool) {
 		return
 	}
 
-	for idx, n := range p.s.pagedCuts() {
+	var selected int = -1
 
+	//for idx, n := range p.s.pagedCuts() {
+	for idx, n := range p.s.filteredCuts {
 		if n.Name == name {
-			p.s.Selected = idx
+			selected = idx
 		}
 	}
+
+	if selected == -1 {
+		panic("must not happen: didn't find shortcut " + name)
+	}
+
+	p.mainWindow.pager = pager.New(p.s.height-3, len(p.s.filteredCuts), selected)
+	p.selected = selected
 	p.refresh()
 	p.Print()
 	return
@@ -136,6 +158,26 @@ func (p *ParamsWindow) setParamsAsDefaults() error {
 
 }
 
+func (p *ParamsWindow) KeyCtrlF(ev *tcell.EventKey) (quit bool) {
+	switch p.selectedParam {
+	case -2:
+		p.s.bark()
+	case -1:
+		p.s.bark()
+	default:
+		//	p.insertRuneToParam(ev.Rune())
+
+		// pName := p.params[p.selectedParam][0]
+		// p.s.currentParameters[pName] = value
+		val := p.params[p.selectedParam][1]
+		if len(val) > 0 && val[0] == '#' {
+			val = val[1:]
+		}
+		p.s.switchWindow(NewFileWindow(p, p.params[p.selectedParam][0], val, p.selected))
+	}
+	return
+}
+
 func (p *ParamsWindow) KeyF4(ev *tcell.EventKey) (quit bool) {
 	name := p.shortcut
 
@@ -156,12 +198,21 @@ func (p *ParamsWindow) KeyF4(ev *tcell.EventKey) (quit bool) {
 		return
 	}
 
-	for idx, n := range p.s.pagedCuts() {
+	var selected int = -1
 
+	//for idx, n := range p.s.pagedCuts() {
+	for idx, n := range p.s.filteredCuts {
 		if n.Name == name {
-			p.s.Selected = idx
+			selected = idx
 		}
 	}
+
+	if selected == -1 {
+		panic("must not happen: didn't find shortcut " + name)
+	}
+
+	p.mainWindow.pager = pager.New(p.s.height-3, len(p.s.filteredCuts), selected)
+	p.selected = selected
 
 	p.refresh()
 	p.Print()
@@ -246,7 +297,7 @@ func (p *ParamsWindow) KeyBackspace(ev *tcell.EventKey) (quit bool) {
 }
 
 func (p *ParamsWindow) KeyEscape(ev *tcell.EventKey) (quit bool) {
-	p.s.CopyAllDefaultsToCurrentParams()
+	p.s.CopyAllDefaultsToCurrentParams(p.s.filteredCuts[p.selected].Name)
 	p.cursorX = -1
 	p.Print()
 	return
@@ -265,7 +316,7 @@ func (p *ParamsWindow) copyDefaultToCurrentParam() {
 }
 
 func (p *ParamsWindow) KeyEnter(ev *tcell.EventKey) (quit bool) {
-	p.s.switchWindow(NewMainWindow(p.s))
+	p.s.switchWindow(p.mainWindow)
 	return false
 }
 
@@ -353,7 +404,10 @@ func (p *ParamsWindow) KeyBackTab(ev *tcell.EventKey) (quit bool) {
 
 func (p *ParamsWindow) printCachedParams() {
 	if len(p.s.currentParameters) > 0 {
-		p.s.puts(p.s.style.selected, 1, p.s.height-2, mapToString(p.s.currentParameters))
+		for x := 0; x < p.s.width; x++ {
+			p.s.puts(p.s.style.search, x, p.s.height-3, " ")
+		}
+		p.s.puts(p.s.style.search, 0, p.s.height-3, " "+mapToString(p.s.currentParameters)+" ")
 	}
 }
 
@@ -446,12 +500,16 @@ func (p *ParamsWindow) printParam(line int, name, val, typ string) {
 }
 
 func (p *ParamsWindow) Print() {
-	cs := p.s.pagedCuts()
-	if len(cs) == 0 {
-		p.s.bark()
-		return
-	}
-	p.finalCmd, p.params, p.finalDefaults = p.s.paramLines(cs)
+	/*
+		cs := p.s.pagedCuts()
+		if len(cs) == 0 {
+			p.s.bark()
+			return
+		}
+	*/
+
+	//p.finalCmd, p.params, p.finalDefaults = p.s.paramLines(cs)
+	p.finalCmd, p.params, p.finalDefaults = p.s.paramLines(p.s.filteredCuts[p.selected].Name)
 
 	p.s.Screen.Clear()
 	p.s.Screen.HideCursor()

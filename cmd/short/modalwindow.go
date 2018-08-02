@@ -36,6 +36,10 @@ func (m *ModalWindow) KeyCtrlSpace(ev *tcell.EventKey) (quit bool) {
 	return
 }
 
+func (m *ModalWindow) KeyCtrlF(ev *tcell.EventKey) (quit bool) {
+	return
+}
+
 func (m *ModalWindow) KeyCtrlC(ev *tcell.EventKey) (quit bool) {
 	return m.s.doQuit(ev)
 }

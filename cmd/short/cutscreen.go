@@ -26,6 +26,7 @@ type Window interface {
 	KeyEscape(ev *tcell.EventKey) (quit bool)
 	KeyCtrlS(ev *tcell.EventKey) (quit bool)
 	KeyCtrlC(ev *tcell.EventKey) (quit bool)
+	KeyCtrlF(ev *tcell.EventKey) (quit bool)
 	KeyCtrlE(ev *tcell.EventKey) (quit bool)
 	KeyCtrlL(ev *tcell.EventKey) (quit bool)
 	KeyCtrlR(ev *tcell.EventKey) (quit bool)
@@ -38,11 +39,11 @@ type Window interface {
 
 type Screen struct {
 	tcell.Screen
-	All          short.Cuts
-	allCuts      map[string]short.Cut
-	Lines        int
-	First        int
-	Selected     int
+	All     short.Cuts
+	allCuts map[string]short.Cut
+	Lines   int
+	// First   int
+	// Selected     int
 	filteredCuts short.Cuts
 	Search       string
 	style        struct {
@@ -76,9 +77,11 @@ func (s *Screen) loadShortCuts() error {
 
 	s.All = all
 	s.allCuts = allCuts
-	s.First = 0
-	s.Selected = 0
+	// s.First = 0
+	// s.Selected = 0
 	s.filteredCuts = all
+
+	s.fuzzyFind()
 
 	return nil
 
@@ -178,9 +181,11 @@ func (s *Screen) setKeyMaps() {
 	s.KeyMap[tcell.KeyBackspace2] = s.currentWindow.KeyBackspace
 	s.KeyMap[tcell.KeyCtrlE] = s.currentWindow.KeyCtrlE
 	s.KeyMap[tcell.KeyCtrlS] = s.currentWindow.KeyCtrlS
+	s.KeyMap[tcell.KeyCtrlF] = s.currentWindow.KeyCtrlF
 	s.KeyMap[tcell.KeyF4] = s.currentWindow.KeyF4
 }
 
+/*
 func (s *Screen) pagedCuts() short.Cuts {
 	cs := s.filteredCuts[s.First:]
 
@@ -190,10 +195,13 @@ func (s *Screen) pagedCuts() short.Cuts {
 
 	return cs
 }
+*/
 
-func (s *Screen) paramLines(cs short.Cuts) (cmd string, lines params, defaults map[string]string) {
+//func (s *Screen) paramLines(cs short.Cuts) (cmd string, lines params, defaults map[string]string) {
+func (s *Screen) paramLines(shortCutName string) (cmd string, lines params, defaults map[string]string) {
 
-	paramDefs, err := short.Params(cs[s.Selected].Name, s.allCuts)
+	//paramDefs, err := short.Params(cs[s.Selected].Name, s.allCuts)
+	paramDefs, err := short.Params(shortCutName, s.allCuts)
 
 	if err != nil {
 		s.puts(s.style.code, 10, 10, "ERROR: "+err.Error())
@@ -201,7 +209,8 @@ func (s *Screen) paramLines(cs short.Cuts) (cmd string, lines params, defaults m
 		return
 	}
 
-	cmd, vals, err2 := short.CommandAndValues(cs[s.Selected].Name, s.allCuts, nil)
+	//cmd, vals, err2 := short.CommandAndValues(cs[s.Selected].Name, s.allCuts, nil)
+	cmd, vals, err2 := short.CommandAndValues(shortCutName, s.allCuts, nil)
 	if err2 != nil {
 		s.puts(s.style.code, 10, 10, "ERROR: "+err2.Error())
 		s.Screen.Show()
@@ -231,10 +240,11 @@ func (s *Screen) paramLines(cs short.Cuts) (cmd string, lines params, defaults m
 	return
 }
 
-func (s *Screen) CopyAllDefaultsToCurrentParams() {
-	cs := s.pagedCuts()
+func (s *Screen) CopyAllDefaultsToCurrentParams(shortCutName string) {
+	//cs := s.pagedCuts()
 
-	_, vals, err2 := short.CommandAndValues(cs[s.Selected].Name, s.allCuts, nil)
+	// _, vals, err2 := short.CommandAndValues(cs[s.Selected].Name, s.allCuts, nil)
+	_, vals, err2 := short.CommandAndValues(shortCutName, s.allCuts, nil)
 	if err2 != nil {
 		s.puts(s.style.code, 10, 10, "ERROR: "+err2.Error())
 		s.Screen.Show()
@@ -255,8 +265,8 @@ func (s *Screen) debug(str string) {
 
 func (s *Screen) resetFilter() {
 	s.filteredCuts = s.All
-	s.Selected = 0
-	s.First = 0
+	// s.Selected = 0
+	// s.First = 0
 	s.Search = ""
 }
 
@@ -286,15 +296,17 @@ func (s *Screen) fuzzyFind() {
 	for _, r := range result {
 		s.filteredCuts = append(s.filteredCuts, m[r.Target])
 	}
-	s.First = 0
-	s.Selected = 0
+	// s.First = 0
+	// s.Selected = 0
 }
 
+/*
 func (s *Screen) SelectedName() string {
 	cs := s.pagedCuts()
 
 	return cs[s.Selected].Name
 }
+*/
 
 func (s *Screen) bark() {
 	s.Screen.Clear()

@@ -69,6 +69,27 @@ func replaceParamsInCommand(command string, params map[string]string) string {
 }
 
 func Params(cutName string, allCuts map[string]Cut) (paramsDefinition map[string]string, err error) {
+
+	c := allCuts[cutName]
+
+	cmd, _, err2 := c.commandAndValues(allCuts)
+
+	if err2 != nil {
+		err = err2
+		return
+	}
+
+	var errors map[string]string
+	paramsDefinition, errors = findParamsInCommand(cmd)
+
+	if len(errors) > 0 {
+		err = fmt.Errorf("ERROR in params definition: %v", errors)
+	}
+	return
+}
+
+/*
+func Params(cutName string, allCuts map[string]Cut) (paramsDefinition map[string]string, err error) {
 	c := allCuts[cutName]
 	cmd := c.Command
 
@@ -93,6 +114,7 @@ func Params(cutName string, allCuts map[string]Cut) (paramsDefinition map[string
 	}
 	return
 }
+*/
 
 func findParamsInCommand(command string) (paramsDefinition map[string]string, errors map[string]string) {
 	paramsDefinition = map[string]string{}
@@ -285,7 +307,68 @@ func Load(configJSON io.Reader) (allCuts map[string]Cut, err error) {
 	return
 }
 
+func (c Cut) commandAndValues(allCuts map[string]Cut) (cmd string, vals []map[string]string, err error) {
+
+	vals = []map[string]string{c.Defaults}
+
+	if c.Command[0] != ':' {
+		cmd = c.Command
+		return
+	}
+
+	refname := c.Command[1:]
+
+	idx := strings.Index(refname, " ")
+	var appendix string
+	if idx > 0 {
+		appendix = strings.TrimSpace(refname[idx:])
+		refname = strings.TrimSpace(refname[:idx])
+	}
+
+	c, has := allCuts[refname]
+
+	if !has {
+		err = fmt.Errorf("unknown cut: %#v, defined as parent for cut %#v", refname, c.Name)
+		return
+	}
+
+	var grps []map[string]string
+	var res string
+	res, grps, err = c.commandAndValues(allCuts)
+
+	if err != nil {
+		return
+	}
+	vals = append(vals, grps...)
+	cmd = res
+	if appendix != "" {
+		cmd += " " + appendix
+
+	}
+
+	return
+}
+
 func CommandAndValues(cutName string, allCuts map[string]Cut, runtimeParams map[string]string) (cmd string, vals map[string]string, err error) {
+	c, has := allCuts[cutName]
+
+	if !has {
+		err = fmt.Errorf("unknown cut: %#v", cutName)
+		return
+	}
+
+	var valueGroups []map[string]string
+	cmd, valueGroups, err = c.commandAndValues(allCuts)
+	if err != nil {
+		return
+	}
+
+	vals = finalValues(append([]map[string]string{runtimeParams}, valueGroups...)...)
+	err = validateValues(cmd, vals)
+	return
+}
+
+func _CommandAndValues(cutName string, allCuts map[string]Cut, runtimeParams map[string]string) (cmd string, vals map[string]string, err error) {
 	c, has := allCuts[cutName]
 
 	if !has {
@@ -299,6 +382,8 @@ func CommandAndValues(cutName string, allCuts map[string]Cut, runtimeParams map[
 	valueGroups = append(valueGroups, c.Defaults)
 
 	cmd = c.Command
+
+	// TODO: allow appendix after space
 
 	for cmd[0] == ':' {
 
