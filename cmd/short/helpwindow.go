@@ -29,9 +29,9 @@ var help = map[string]string{
 	"DEL":        "remove selected shortcut",
 	"UP/DOWN":    "select shortcut",
 	"LEFT/RIGHT": "previous/next page",
-	"CTRL-E":     "execute command",
+	"ENTER":      "execute command",
 	"ESC":        "clear search bar",
-	"ENTER":      "edit parameters",
+	"TAB":        "edit parameters",
 	"CTRL-SPACE": "clear parameter buffer",
 	"CTRL-C":     "quit",
 }

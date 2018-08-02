@@ -296,7 +296,7 @@ func (p *ParamsWindow) KeyBackspace(ev *tcell.EventKey) (quit bool) {
 	return
 }
 
-func (p *ParamsWindow) KeyEscape(ev *tcell.EventKey) (quit bool) {
+func (p *ParamsWindow) KeyF2(ev *tcell.EventKey) (quit bool) {
 	p.s.CopyAllDefaultsToCurrentParams(p.s.filteredCuts[p.selected].Name)
 	p.cursorX = -1
 	p.Print()
@@ -315,7 +315,7 @@ func (p *ParamsWindow) copyDefaultToCurrentParam() {
 	p.s.currentParameters[pName] = p.finalDefaults[pName]
 }
 
-func (p *ParamsWindow) KeyEnter(ev *tcell.EventKey) (quit bool) {
+func (p *ParamsWindow) KeyEscape(ev *tcell.EventKey) (quit bool) {
 	p.s.switchWindow(p.mainWindow)
 	return false
 }
@@ -328,6 +328,10 @@ func (p *ParamsWindow) KeyLeft(ev *tcell.EventKey) (quit bool) {
 	}
 	p.s.bark()
 	return
+}
+
+func (p *ParamsWindow) KeyEnter(ev *tcell.EventKey) (quit bool) {
+	return p.mainWindow.KeyEnter(ev)
 }
 
 func (p *ParamsWindow) KeyRight(ev *tcell.EventKey) (quit bool) {
@@ -412,8 +416,8 @@ func (p *ParamsWindow) printCachedParams() {
 }
 
 func (p *ParamsWindow) printHelp() {
-	p.s.puts(tcell.StyleDefault, 1, p.s.height-1, "press ENTER to leave screen")
-	p.s.puts(p.s.style.name, 1, 8, "press ESC to copy all defaults to your parameter buffer")
+	p.s.puts(tcell.StyleDefault, 1, p.s.height-1, "press ENTER to execute Commad, press ESC to return")
+	p.s.puts(p.s.style.name, 1, 8, "press F2 to copy all defaults to your parameter buffer")
 	p.s.puts(p.s.style.name, 1, 9, "press CTRL+P to copy default value to your parameter buffer")
 	p.s.puts(p.s.style.name, 1, 10, "press F4 to safe the current parameter buffer as default values")
 }
@@ -516,7 +520,10 @@ func (p *ParamsWindow) Print() {
 
 	p.printCmdInfo()
 	p.printParams()
-	p.printCachedParams()
+	//p.printCachedParams()
+
+	p.mainWindow.printCMD(p.s.filteredCuts[p.selected].Name)
+
 	p.printHelp()
 
 	p.s.Screen.Show()

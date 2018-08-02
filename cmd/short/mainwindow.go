@@ -108,7 +108,7 @@ func (m *MainWindow) KeyDown(ev *tcell.EventKey) (quit bool) {
 	return
 }
 
-func (m *MainWindow) KeyEnter(ev *tcell.EventKey) (quit bool) {
+func (m *MainWindow) KeyTab(ev *tcell.EventKey) (quit bool) {
 	from, _, selected := m.pager.Indexes()
 
 	if selected == -1 {
@@ -127,7 +127,7 @@ func (m *MainWindow) KeyEscape(ev *tcell.EventKey) (quit bool) {
 	return
 }
 
-func (m *MainWindow) KeyCtrlE(ev *tcell.EventKey) (quit bool) {
+func (m *MainWindow) KeyEnter(ev *tcell.EventKey) (quit bool) {
 	_, _, selected := m.pager.Indexes()
 
 	//if len(m.s.pagedCuts()) == 0 {
@@ -180,6 +180,29 @@ func (m *MainWindow) KeyBackspace(ev *tcell.EventKey) (quit bool) {
 	return
 }
 
+func (m *MainWindow) CMD(shortCutName string) string {
+	cmd, err := short.Command(shortCutName, m.s.allCuts, m.s.currentParameters)
+	if err != nil {
+		return "ERROR: " + err.Error()
+	}
+
+	return cmd
+}
+
+func (m *MainWindow) printCMD(shortCutName string) {
+	cmd := m.CMD(shortCutName)
+	//cmd, err := short.Command(cs[m.s.Selected].Name, m.s.allCuts, m.s.currentParameters)
+
+	//m.s.puts(m.s.style.highlighted, 1, m.s.height-3, "custom parameters: ")
+	if len(m.s.currentParameters) > 0 {
+		for x := 0; x < m.s.width; x++ {
+			m.s.puts(m.s.style.search, x, m.s.height-3, " ")
+		}
+		m.s.puts(m.s.style.search, 0, m.s.height-3, " "+mapToString(m.s.currentParameters)+" ")
+	}
+	m.s.puts(m.s.style.selected, 1, m.s.height-2, cmd)
+}
+
 func (m *MainWindow) Print() {
 	//cs := m.s.pagedCuts()
 
@@ -221,24 +244,12 @@ func (m *MainWindow) Print() {
 	//if m.s.Selected > len(cs)-1 {
 	// m.s.puts(m.s.style.selected, 1, m.s.height-2, " ")
 	// } else {
-	if selected > -1 {
-		//cmd, err := short.Command(cs[m.s.Selected].Name, m.s.allCuts, m.s.currentParameters)
 
-		cmd, err := short.Command(cs[selected].Name, m.s.allCuts, m.s.currentParameters)
-		if err != nil {
-			cmd = "ERROR: " + err.Error()
-		}
-		//m.s.puts(m.s.style.highlighted, 1, m.s.height-3, "custom parameters: ")
-		if len(m.s.currentParameters) > 0 {
-			for x := 0; x < m.s.width; x++ {
-				m.s.puts(m.s.style.search, x, m.s.height-3, " ")
-			}
-			m.s.puts(m.s.style.search, 0, m.s.height-3, " "+mapToString(m.s.currentParameters)+" ")
-		}
-		m.s.puts(m.s.style.selected, 1, m.s.height-2, cmd)
+	if selected != -1 {
+		m.printCMD(cs[selected].Name)
 	}
 
-	pretext := " search (F1 for help, CTRL+e to execute) "
+	pretext := " search (F1 for help, ENTER to execute) "
 	lenpre := len(pretext)
 
 	m.s.puts(m.s.style.highlighted, 0, m.s.height-1, pretext)

@@ -36,18 +36,18 @@ func (f *Field) Insert(r rune) {
 		f.Cursor = len(f.Value)
 	}
 
-	if f.Cursor > 0 {
-		orig := f.Value
-		if len(orig)+2 > f.Cursor {
-		}
-		f.Value = string(r)
-		if len(orig)+2 > f.Cursor {
-			f.Value = orig[:f.Cursor] + f.Value + orig[f.Cursor:]
-		}
-		f.Cursor++
-	} else {
-		f.Value = string(r) + f.Value
-		f.Cursor++
+	orig := f.Value
+	f.Value = string(r)
+
+	defer func() { f.Cursor++ }()
+
+	if f.Cursor == 0 {
+		f.Value += orig
+		return
+	}
+
+	if len(orig)+2 > f.Cursor {
+		f.Value = orig[:f.Cursor] + f.Value + orig[f.Cursor:]
 	}
 }
 
