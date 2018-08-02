@@ -16,6 +16,10 @@ func (m *ModalWindow) KeyF1(ev *tcell.EventKey) (quit bool) {
 	return
 }
 
+func (f *ModalWindow) KeyF2(ev *tcell.EventKey) (quit bool) {
+	return
+}
+
 func (m *ModalWindow) KeyF4(ev *tcell.EventKey) (quit bool) {
 	return
 }

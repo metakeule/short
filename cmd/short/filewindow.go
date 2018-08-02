@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/metakeule/pager"
 	"io/ioutil"
-	"os"
+	"log"
 	"sort"
 	// "path"
 	"path/filepath"
@@ -12,7 +12,8 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	// "sort"
-	"sync"
+	"os"
+	// "sync"
 )
 
 type FileWindow struct {
@@ -22,7 +23,7 @@ type FileWindow struct {
 	files      []string
 	dir        string
 	search     string
-	mx         sync.Mutex
+	// mx         sync.Mutex
 	// Selected         int
 	searchDirs       bool
 	includeHidden    bool
@@ -30,6 +31,8 @@ type FileWindow struct {
 	selectedShortCut int
 	pager            pager.Pager
 	paramsWindow     *ParamsWindow
+	logger           *log.Logger
+	absolutePath     bool
 }
 
 func NewFileWindow(p *ParamsWindow, paramName string, value string, selectedShortCut int) *FileWindow {
@@ -45,7 +48,11 @@ func NewFileWindow(p *ParamsWindow, paramName string, value string, selectedShor
 	f.fileSearch = strings.TrimSpace(value)
 	f.selectedShortCut = selectedShortCut
 	f.s.Screen.ShowCursor(9+len(f.fileSearch), 1)
-	f.pager = pager.New(p.s.height-3, 0, 0)
+	f.pager = pager.New(p.s.height-3, 0)
+	_ = os.Create
+	// out, _ := os.Create(filepath.Join(f.wd, "files.log"))
+
+	// f.logger = log.New(out, "short-files", log.Lshortfile)
 	if f.fileSearch != "" {
 		f.findFiles()
 	}
@@ -66,7 +73,7 @@ func (f *FileWindow) KeyEscape(ev *tcell.EventKey) (quit bool) {
 
 func (f *FileWindow) KeyBackspace(ev *tcell.EventKey) (quit bool) {
 
-	f.mx.Lock()
+	// f.mx.Lock()
 	rs := []rune(f.fileSearch)
 	if len(rs) > 0 {
 		rs = rs[0 : len(rs)-1]
@@ -78,14 +85,15 @@ func (f *FileWindow) KeyBackspace(ev *tcell.EventKey) (quit bool) {
 	if strings.TrimSpace(f.fileSearch) != "" {
 		f.findFiles()
 	}
-	f.mx.Unlock()
+	// f.mx.Unlock()
 
 	return
 }
 
 func (f *FileWindow) KeyOther(ev *tcell.EventKey) (quit bool) {
-	f.mx.Lock()
+	// f.mx.Lock()
 	f.fileSearch += string(ev.Rune())
+	// f.logger.Printf("filesearch: %#v\n", f.fileSearch)
 	f.s.Screen.ShowCursor(9+len(f.fileSearch), 1)
 	/*
 		m.s.fuzzyFind()
@@ -96,7 +104,7 @@ func (f *FileWindow) KeyOther(ev *tcell.EventKey) (quit bool) {
 
 		f.findFiles()
 	}
-	f.mx.Unlock()
+	// f.mx.Unlock()
 	return
 }
 
@@ -115,7 +123,7 @@ func (f *FileWindow) Print() {
 	f.s.puts(f.s.style.highlighted, 9, 1, f.fileSearch)
 
 	abs, _ := filepath.Abs(f.dir)
-	f.s.puts(f.s.style.name, 1, 2, "("+abs+")"+" ["+f.search+"]")
+	f.s.puts(f.s.style.name, 1, 2, "("+abs+")") // +" ["+f.search+"]")
 
 	/*
 		if len(files) > f.Selected {
@@ -166,6 +174,52 @@ func (f *FileWindow) KeyUp(ev *tcell.EventKey) (quit bool) {
 	}
 
 	f.Print()
+	return
+}
+
+func (f *FileWindow) absolutify() {
+
+}
+
+func (f *FileWindow) KeyF2(ev *tcell.EventKey) (quit bool) {
+	if len(f.fileSearch) == 0 {
+		f.s.bark()
+		return
+	}
+
+	var postfix string
+	if f.fileSearch[len(f.fileSearch)-1] == '/' {
+		postfix = "/"
+	}
+
+	f.absolutePath = !f.absolutePath
+
+	if f.absolutePath {
+		abs, err := filepath.Abs(f.tildeToHome(f.fileSearch))
+		if err == nil {
+			f.fileSearch = abs + postfix
+		} else {
+			f.s.bark()
+			return
+		}
+	} else {
+		if filepath.IsAbs(f.fileSearch) {
+			rel, err := filepath.Rel(f.wd, f.tildeToHome(f.fileSearch))
+			if err == nil {
+				f.fileSearch = rel + postfix
+			} else {
+				f.s.bark()
+				return
+			}
+		}
+	}
+
+	f.s.Screen.ShowCursor(9+len(f.fileSearch), 1)
+	f.findFiles()
+	f.Print()
+	// } else {
+	// f.s.bark()
+	// }
 	return
 }
 
@@ -232,6 +286,14 @@ func (f *FileWindow) KeyDown(ev *tcell.EventKey) (quit bool) {
 	return
 }
 
+func (f *FileWindow) tildeToHome(path string) string {
+	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
+}
+
+func (f *FileWindow) homeToTilde(path string) string {
+	return strings.Replace(path, os.Getenv("HOME"), "~", 1)
+}
+
 /*
 func (f *FileWindow) Up() {
 	f.mx.Lock()
@@ -260,22 +322,32 @@ func (f *FileWindow) Down() {
 */
 
 func (f *FileWindow) findFiles() {
+	// f.logger.Printf("-------Start---------\n")
 	f.files = nil
 	// f.Selected = 0
 
-	// var abs bool
+	var abs bool
+	var hasTilde bool
 	// abs = true
 
-	if len(f.fileSearch) > 0 && (f.fileSearch[0] == '/' || f.fileSearch[0] == '~') {
+	if len(f.fileSearch) > 0 && (f.fileSearch[0] == '/') {
 		f.dir = filepath.Dir(f.fileSearch)
+		abs = true
 	} else {
-		f.dir = filepath.Join(f.wd, filepath.Dir(f.fileSearch))
+		if len(f.fileSearch) > 0 && f.fileSearch[0] == '~' {
+			// f.logger.Println("jo")
+			hasTilde = true
+			f.dir = filepath.Dir(f.tildeToHome(f.fileSearch))
+			abs = true
+		} else {
+
+			f.dir = filepath.Join(f.wd, filepath.Dir(f.fileSearch))
+		}
 	}
 
-	hasTilde := strings.Index(f.dir, "~") > -1
+	// hasTilde := strings.Index(f.dir, "~") == 0
 
-	home := os.Getenv("HOME")
-	f.dir = strings.Replace(f.dir, "~", home, 1)
+	// home := os.Getenv("HOME")
 	//f.dir = filepath.Dir(f.fileSearch)
 
 	if len(f.fileSearch) == 0 {
@@ -307,36 +379,50 @@ func (f *FileWindow) findFiles() {
 	//files, _ := filepath.Glob(f.dir + "/*")
 	files, _ := ioutil.ReadDir(f.dir)
 	// fuzzy.Find(source, targets)
+	// f.logger.Printf("dir: %#v search: %#v\n", f.dir, f.search)
 
 	for _, fl := range files {
 		name := fl.Name()
 
 		//if pth[len(pth)-1] != '.' {
 		if name != "." && name != ".." {
+			// f.logger.Printf("file: %#v\n", fl.Name())
 			//if pth[len(pth)-1] != '.' && fuzzy.Match(f.search, filepath.Base(pth)) {
 			_ = fuzzy.Match
-			//if f.search == "." || f.search == ".." || fuzzy.Match(f.search, name) {
-			if f.search == "." || f.search == ".." || strings.Contains(name, f.search) {
-				pth := filepath.Join(f.dir, name)
+			//if f.search == "." || f.search == ".." || fuzzy.Match(f.search, strings.ToLower(name)) {
+			if f.search == "." || f.search == ".." || strings.Contains(strings.ToLower(name), strings.ToLower(f.search)) {
+				dir := f.dir
+
+				if !abs {
+					dir, _ = filepath.Rel(f.wd, dir)
+				}
+
 				/*
-					if !abs {
-						pth, _ = filepath.Rel(f.wd, pth)
+					if hasTilde {
+						dir, _ = filepath.Rel(os.Getenv("HOME"), dir)
+						dir = "~/" + dir
 					}
 				*/
+
 				if hasTilde {
-					pth = strings.Replace(pth, home, "~", 1)
+					//dir = strings.Replace(dir, home, "~", 1)
+					dir = f.homeToTilde(dir)
 				}
-				if fl.IsDir() {
-					pth += "/"
+
+				if name != "." && name != ".." {
+					pth := filepath.Join(dir, name)
+					if fl.IsDir() {
+						pth += "/"
+					}
+					f.files = append(f.files, pth)
 				}
-				f.files = append(f.files, pth)
 			}
 		}
 	}
-
+	// f.logger.Printf("-------END---------\n")
 	sort.Strings(f.files)
 
-	f.pager = pager.New(f.s.height-3, len(f.files), 0)
+	f.pager = pager.New(f.s.height-3, len(f.files))
 	f.Print()
 	//}()
 

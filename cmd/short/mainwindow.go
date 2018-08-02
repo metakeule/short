@@ -157,7 +157,7 @@ func (m *MainWindow) KeyCtrlE(ev *tcell.EventKey) (quit bool) {
 }
 
 func (m *MainWindow) resetPager() {
-	m.pager = pager.New(m.s.height-3, len(m.s.filteredCuts), 0)
+	m.pager = pager.New(m.s.height-3, len(m.s.filteredCuts))
 }
 
 func (m *MainWindow) KeyBackspace(ev *tcell.EventKey) (quit bool) {

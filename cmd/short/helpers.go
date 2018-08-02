@@ -46,8 +46,8 @@ func (f *Field) Insert(r rune) {
 		}
 		f.Cursor++
 	} else {
-		f.Value += string(r)
-		f.Cursor = len(f.Value)
+		f.Value = string(r) + f.Value
+		f.Cursor++
 	}
 }
 

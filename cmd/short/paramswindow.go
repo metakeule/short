@@ -119,7 +119,7 @@ func (p *ParamsWindow) KeyCtrlS(ev *tcell.EventKey) (quit bool) {
 		panic("must not happen: didn't find shortcut " + name)
 	}
 
-	p.mainWindow.pager = pager.New(p.s.height-3, len(p.s.filteredCuts), selected)
+	p.mainWindow.pager = pager.New(p.s.height-3, len(p.s.filteredCuts), pager.PreSelect(uint(selected)))
 	p.selected = selected
 	p.refresh()
 	p.Print()
@@ -211,7 +211,7 @@ func (p *ParamsWindow) KeyF4(ev *tcell.EventKey) (quit bool) {
 		panic("must not happen: didn't find shortcut " + name)
 	}
 
-	p.mainWindow.pager = pager.New(p.s.height-3, len(p.s.filteredCuts), selected)
+	p.mainWindow.pager = pager.New(p.s.height-3, len(p.s.filteredCuts), pager.PreSelect(uint(selected)))
 	p.selected = selected
 
 	p.refresh()

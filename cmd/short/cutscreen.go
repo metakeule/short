@@ -16,6 +16,7 @@ type Window interface {
 	KeyCtrlP(ev *tcell.EventKey) (quit bool)
 	KeyCtrlSpace(ev *tcell.EventKey) (quit bool)
 	KeyF1(ev *tcell.EventKey) (quit bool)
+	KeyF2(ev *tcell.EventKey) (quit bool)
 	KeyUp(ev *tcell.EventKey) (quit bool)
 	KeyLeft(ev *tcell.EventKey) (quit bool)
 	KeyDown(ev *tcell.EventKey) (quit bool)
@@ -155,7 +156,7 @@ func (s *Screen) setKeyMaps() {
 	s.KeyMap[tcell.KeyCtrlP] = s.currentWindow.KeyCtrlP
 	s.KeyMap[tcell.KeyCtrlSpace] = s.currentWindow.KeyCtrlSpace
 	s.KeyMap[tcell.KeyF1] = s.currentWindow.KeyF1
-	s.KeyMap[tcell.KeyF2] = nil
+	s.KeyMap[tcell.KeyF2] = s.currentWindow.KeyF2
 	s.KeyMap[tcell.KeyF3] = nil
 	s.KeyMap[tcell.KeyF4] = nil
 	s.KeyMap[tcell.KeyF5] = nil
