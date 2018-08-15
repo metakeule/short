@@ -42,7 +42,7 @@ example
 	]
 */
 
-var Types = []string{"string", "int", "uint", "float", "date", "time"}
+var Types = []string{"string", "int", "uint", "float", "date", "time", "bool"}
 
 const ParamRegExp = `#([.-_a-z]+):([a-z]+)#`
 
@@ -165,6 +165,11 @@ func validateValues(command string, params map[string]string) error {
 		}
 
 		switch def {
+		case "bool":
+			_, err := strconv.ParseBool(v)
+			if err != nil {
+				return fmt.Errorf("parameter '%s' is not a bool", k)
+			}
 		case "string":
 		case "int":
 			_, err := strconv.Atoi(v)
