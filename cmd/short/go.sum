@@ -10,9 +10,13 @@ github.com/mattn/go-runewidth v0.0.3 h1:a+kO+98RDGEfo6asOGMmpodZq4FNtnGP54yps8Bz
 github.com/mattn/go-runewidth v0.0.3/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
 github.com/metakeule/config v1.11.5 h1:khjNBg6ad3cqi3BP+4EnmSxhReO3H78LbKn4QfGrw6Y=
 github.com/metakeule/config v1.11.5/go.mod h1:vL4fdTrun9Klnkd5LdJnpBLi6VptHAU2vsAJ71DQEh8=
+github.com/metakeule/fmtdate v1.1.1 h1:TvWkgmMbqj+xMuaSQZRXbc1Ehi95PStoLZJu65Oaeyk=
+github.com/metakeule/fmtdate v1.1.1/go.mod h1:2JyMFlKxeoGy1qS6obQukT0AL0Y4iNANQL8scbSdT4E=
 github.com/metakeule/pager v3.0.1+incompatible h1:uquhfzzx+C0XzbHMGLqO3S+hdY8WbmIZltJh25G3o3k=
 github.com/metakeule/pager v3.0.1+incompatible/go.mod h1:Za4WKafyy1AGKdotUoSWRAOEGPFlBNxaIMIRqM73OWI=
 github.com/metakeule/short v0.0.0-20180722022120-c15e63925a16 h1:gOD/eEliLKOMZ5qOF/6TZWXBChJbY7Kt0yXlZtBiRB0=
+github.com/metakeule/short v1.0.1 h1:uqGzs82Fly1DLAiZzCQgoHJH3Lde0X3cUVvNAXweFvs=
+github.com/metakeule/short v1.0.1/go.mod h1:JOt/ZiTVxjUIQTsuq9L+md6MvC914CcjrMS21djfvGc=
 github.com/stretchr/powerwalk v0.0.0-20151124150408-bceb9d014549 h1:zjTKDjwZy1IVyLos+s70iYMwL/ZVojUbIDX5kghHa1Q=
 github.com/stretchr/powerwalk v0.0.0-20151124150408-bceb9d014549/go.mod h1:RhJzAYfVBD/ULOCeUUaTn0CHDRQBYHjDY7yYpSt6+4M=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
