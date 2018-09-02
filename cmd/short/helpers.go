@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/metakeule/short"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/metakeule/short"
 )
 
 type Field struct {
@@ -109,7 +110,7 @@ func paramsStringToMap(s string) (m map[string]string, err error) {
 
 func save(allCuts map[string]short.Cut) error {
 	f, err := os.Create(SHORTCUT_FILE)
-	if err != nil && err != os.ErrNotExist {
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
@@ -122,10 +123,15 @@ func load() (allCuts map[string]short.Cut, err error) {
 	var f *os.File
 	f, err = os.Open(SHORTCUT_FILE)
 	if err != nil {
-		_, notExist := err.(*os.PathError)
-		if notExist {
+		if os.IsNotExist(err) {
 			err = nil
-			allCuts = map[string]short.Cut{}
+			allCuts = map[string]short.Cut{
+				"ls": short.Cut{
+					Name:     "ls",
+					Command:  "ls",
+					Defaults: map[string]string{},
+				},
+			}
 			return
 		}
 

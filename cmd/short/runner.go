@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/metakeule/config"
-	"github.com/metakeule/short"
 	"os"
 	"strings"
+
+	"github.com/metakeule/config"
+	"github.com/metakeule/short"
 )
 
 type runner map[*config.Config]func() error
@@ -103,6 +104,11 @@ func (r runner) Run() error {
 		return err
 	}
 
-	fn := r[cfg.ActiveCommand()]
+	activeCMD := cfg.ActiveCommand()
+	if activeCMD == nil {
+		activeCMD = cmdShell
+	}
+
+	fn := r[activeCMD]
 	return fn()
 }
