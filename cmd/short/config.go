@@ -4,7 +4,7 @@ import (
 	"github.com/metakeule/config"
 )
 
-var cfg = config.MustNew("short", "0.0.1", "short is shortcut tool for commands. Commands will be stored inside $HOME/.short.json")
+var cfg = config.MustNew("short", "1.0.3", "short is shortcut tool for commands. Commands will be stored inside $HOME/.short.json")
 
 var (
 	cmdAdd = cfg.MustCommand("add", "adds a shortcut")
